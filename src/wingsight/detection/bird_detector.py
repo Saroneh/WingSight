@@ -94,15 +94,23 @@ class BirdDetector:
                             if confidence > max_confidence:
                                 max_confidence = confidence
 
-            # Debug: print what was detected (first few times)
-            if not hasattr(self, '_debug_count'):
-                self._debug_count = 0
-            if self._debug_count < 3 and len(all_detections) > 0:
-                print(f"  [DEBUG] Detected {len(all_detections)} objects:")
-                for class_id, conf in all_detections[:5]:  # Show first 5
-                    class_name = self.model.names[class_id] if hasattr(self.model, 'names') else f"class_{class_id}"
-                    print(f"    - {class_name} (ID: {class_id}) confidence: {conf:.2f}")
-                self._debug_count += 1
+            # Debug: print what was detected (always show if no bird found)
+            if len(all_detections) > 0:
+                # Always show detections if no bird was found (for debugging)
+                if max_confidence == 0.0:
+                    print(f"  [DEBUG] Detected {len(all_detections)} objects (no bird):")
+                    for class_id, conf in all_detections[:5]:  # Show first 5
+                        class_name = self.model.names[class_id] if hasattr(self.model, 'names') else f"class_{class_id}"
+                        print(f"    - {class_name} (ID: {class_id}) confidence: {conf:.2f}")
+                # Show detections occasionally even when bird is found
+                elif not hasattr(self, '_debug_count'):
+                    self._debug_count = 0
+                if hasattr(self, '_debug_count') and self._debug_count < 2:
+                    print(f"  [DEBUG] Detected {len(all_detections)} objects:")
+                    for class_id, conf in all_detections[:5]:
+                        class_name = self.model.names[class_id] if hasattr(self.model, 'names') else f"class_{class_id}"
+                        print(f"    - {class_name} (ID: {class_id}) confidence: {conf:.2f}")
+                    self._debug_count += 1
 
             # Return result - show max confidence even if below threshold
             if max_confidence >= self.confidence_threshold:

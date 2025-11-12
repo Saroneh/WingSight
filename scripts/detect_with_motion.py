@@ -23,7 +23,7 @@ def main() -> None:
         blur_size=5              # Blur to reduce noise
     )
     print("Initializing bird detector...")
-    bird_detector = BirdDetector(confidence_threshold=0.15)  # Lower threshold for testing
+    bird_detector = BirdDetector(confidence_threshold=0.10)  # Very low threshold for testing
     
     # Verify model loaded
     if bird_detector.model is None:
