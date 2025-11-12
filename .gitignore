@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+env/
+wgnenv/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# WingSight specific
+scripts/captures/
+*.jpg
+*.png
+detections.csv
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
