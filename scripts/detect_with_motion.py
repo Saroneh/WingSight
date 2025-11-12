@@ -8,16 +8,9 @@ from pathlib import Path
 import cv2
 
 from wingsight.camera.pi_camera import PiCamera
+from wingsight.detection.bird_detector import BirdDetector
 from wingsight.detection.motion_detector import MotionDetector
 from wingsight.logging.csv_logger import CSVLogger
-
-
-def simple_detector(frame) -> tuple[str, float]:
-    """
-    Placeholder detector - returns "bird" or "no_bird".
-    TODO: Replace with actual YOLOv5n/MobileNet inference.
-    """
-    return "no_bird", 0.0
 
 
 def main() -> None:
@@ -29,6 +22,7 @@ def main() -> None:
         motion_threshold=0.01,   # 1% of image must change
         blur_size=5              # Blur to reduce noise
     )
+    bird_detector = BirdDetector(confidence_threshold=0.25)
     logger = CSVLogger(log_file="detections.csv")
     output_dir = Path(__file__).parent / "captures"
     output_dir.mkdir(exist_ok=True)
@@ -55,8 +49,8 @@ def main() -> None:
                 motion_count += 1
                 print(f"Motion detected! (ratio: {motion_ratio:.3f})")
 
-                # Run detection only when motion detected
-                detection, confidence = simple_detector(frame)
+                # Run bird detection only when motion detected
+                detection, confidence = bird_detector.detect(frame)
 
                 # Save image
                 timestamp_str = cv2.getTickCount()
