@@ -22,7 +22,16 @@ def main() -> None:
         motion_threshold=0.01,   # 1% of image must change
         blur_size=5              # Blur to reduce noise
     )
+    print("Initializing bird detector...")
     bird_detector = BirdDetector(confidence_threshold=0.15)  # Lower threshold for testing
+    
+    # Verify model loaded
+    if bird_detector.model is None:
+        print("ERROR: Bird detector model failed to load!")
+        print("Make sure ultralytics is installed: pip install ultralytics")
+        return
+    
+    print("Bird detector ready!\n")
     logger = CSVLogger(log_file="detections.csv")
     output_dir = Path(__file__).parent / "captures"
     output_dir.mkdir(exist_ok=True)
