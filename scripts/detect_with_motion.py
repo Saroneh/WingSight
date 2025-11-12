@@ -22,7 +22,7 @@ def main() -> None:
         motion_threshold=0.01,   # 1% of image must change
         blur_size=5              # Blur to reduce noise
     )
-    bird_detector = BirdDetector(confidence_threshold=0.25)
+    bird_detector = BirdDetector(confidence_threshold=0.15)  # Lower threshold for testing
     logger = CSVLogger(log_file="detections.csv")
     output_dir = Path(__file__).parent / "captures"
     output_dir.mkdir(exist_ok=True)

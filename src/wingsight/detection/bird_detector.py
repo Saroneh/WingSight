@@ -31,6 +31,8 @@ class BirdDetector:
             # Load YOLOv5n (nano - smallest, fastest model)
             self.model = YOLO("yolov5n.pt")
             print("YOLOv5n model loaded successfully")
+            print(f"Model device: {self.model.device}")
+            print(f"Model classes: {len(self.model.names)} classes available")
         except ImportError:
             print(
                 "Warning: ultralytics not installed. Install with: pip install ultralytics"
@@ -70,34 +72,49 @@ class BirdDetector:
             # YOLO expects BGR, but we have RGB - convert
             frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
 
-            # Run inference
-            results = self.model(frame_bgr, verbose=False)
+            # Run inference with lower confidence to see more detections
+            results = self.model(frame_bgr, verbose=False, conf=0.1)
 
             # COCO class 14 is "bird"
             bird_class_id = 14
             max_confidence = 0.0
+            all_detections = []  # For debugging
 
             # Check all detections
             for result in results:
                 boxes = result.boxes
-                if boxes is not None:
+                if boxes is not None and len(boxes) > 0:
                     for box in boxes:
                         class_id = int(box.cls[0])
                         confidence = float(box.conf[0])
+                        all_detections.append((class_id, confidence))
 
                         # Check if it's a bird
                         if class_id == bird_class_id:
                             if confidence > max_confidence:
                                 max_confidence = confidence
 
-            # Return result
+            # Debug: print what was detected (first few times)
+            if not hasattr(self, '_debug_count'):
+                self._debug_count = 0
+            if self._debug_count < 3 and len(all_detections) > 0:
+                print(f"  [DEBUG] Detected {len(all_detections)} objects:")
+                for class_id, conf in all_detections[:5]:  # Show first 5
+                    class_name = self.model.names[class_id] if hasattr(self.model, 'names') else f"class_{class_id}"
+                    print(f"    - {class_name} (ID: {class_id}) confidence: {conf:.2f}")
+                self._debug_count += 1
+
+            # Return result - show max confidence even if below threshold
             if max_confidence >= self.confidence_threshold:
                 return "bird", max_confidence
             else:
+                # Still return the confidence even if below threshold (for debugging)
                 return "no_bird", max_confidence
 
         except Exception as e:
             print(f"Error in YOLO detection: {e}")
+            import traceback
+            traceback.print_exc()
             return "no_bird", 0.0
 
     def _detect_simple(self, frame: np.ndarray) -> Tuple[str, float]:
