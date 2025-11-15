@@ -116,6 +116,10 @@ def main() -> None:
         print(f"Total frames: {frame_count}")
         print(f"Motion events: {motion_count}")
         print(f"Images saved: {saved_count}")
+    except Exception as e:
+        print(f"\nERROR: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         camera.close()
         print(f"Detection log saved to: {logger.log_file}")
