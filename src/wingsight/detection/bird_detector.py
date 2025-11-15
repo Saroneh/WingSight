@@ -8,29 +8,50 @@ import numpy as np
 
 class BirdDetector:
     """
-    Bird detector using YOLOv5n (nano) model.
+    Bird detector using YOLOv8n/YOLOv5n (nano) models.
     Detects birds in frames using pre-trained COCO model.
+    Can use custom fine-tuned models for better Danish bird detection.
     """
 
-    def __init__(self, confidence_threshold: float = 0.25) -> None:
+    def __init__(self, confidence_threshold: float = 0.25, model_name: str = "yolov8n.pt") -> None:
         """
         Initialize bird detector.
 
         Args:
             confidence_threshold: Minimum confidence to count as detection (0.0-1.0)
+            model_name: YOLO model to use. Default "yolov8n.pt" (better than yolov5n).
+                       Can also use "yolov5n.pt" or path to custom fine-tuned model.
         """
         self.confidence_threshold = confidence_threshold
         self.model = None
-        self._load_model()
+        self._load_model(model_name)
 
-    def _load_model(self) -> None:
-        """Load YOLOv5n model (lazy import to avoid errors if not installed)."""
+    def _load_model(self, model_name: str = "yolov8n.pt") -> None:
+        """
+        Load YOLO model (lazy import to avoid errors if not installed).
+        
+        Args:
+            model_name: Model to load. Options:
+                - "yolov8n.pt" (recommended - newer, better accuracy)
+                - "yolov5n.pt" (older, slightly faster)
+                - "path/to/custom.pt" (fine-tuned model)
+        """
         try:
             from ultralytics import YOLO
 
-            # Load YOLOv5n (nano - smallest, fastest model)
-            self.model = YOLO("yolov5n.pt")
-            print("YOLOv5n model loaded successfully")
+            # Try YOLOv8n first (better bird detection), fallback to YOLOv5n
+            try:
+                self.model = YOLO(model_name)
+                print(f"{model_name} model loaded successfully")
+            except Exception:
+                # Fallback to YOLOv5n if YOLOv8n fails
+                if model_name == "yolov8n.pt":
+                    print("YOLOv8n not available, trying YOLOv5n...")
+                    self.model = YOLO("yolov5n.pt")
+                    print("YOLOv5n model loaded successfully")
+                else:
+                    raise
+            
             print(f"Model device: {self.model.device}")
             print(f"Model classes: {len(self.model.names)} classes available")
         except ImportError:
@@ -131,4 +152,45 @@ class BirdDetector:
         Returns no_bird when YOLOv5 is not available.
         """
         return "no_bird", 0.0
+
+    def detect_all_objects(
+        self, frame: np.ndarray, min_confidence: float = 0.5
+    ) -> list[tuple[str, float]]:
+        """
+        Detect all objects in frame (not just birds).
+        Useful for smart capture - only save when interesting objects detected.
+
+        Args:
+            frame: RGB frame from camera
+            min_confidence: Minimum confidence to include detection
+
+        Returns:
+            List of (class_name, confidence) tuples for all detected objects
+        """
+        if frame is None or self.model is None:
+            return []
+
+        try:
+            frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            results = self.model(frame_bgr, verbose=False, conf=min_confidence)
+
+            detections = []
+            for result in results:
+                boxes = result.boxes
+                if boxes is not None and len(boxes) > 0:
+                    for box in boxes:
+                        class_id = int(box.cls[0])
+                        confidence = float(box.conf[0])
+                        class_name = (
+                            self.model.names[class_id]
+                            if hasattr(self.model, "names")
+                            else f"class_{class_id}"
+                        )
+                        detections.append((class_name, confidence))
+
+            return detections
+
+        except Exception as e:
+            print(f"Error detecting objects: {e}")
+            return []
 
